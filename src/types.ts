@@ -17,6 +17,8 @@ export interface DocModel {
   file: string;
   title: string;
   meta: [string, string][];
+  metaHeaders?: [string, string];
+  pageLabel?: string;
   sections: Section[];
 }
 

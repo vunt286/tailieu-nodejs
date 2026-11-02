@@ -1,5 +1,8 @@
 import { render } from "./render.js";
 import { unit1 } from "./content/unit1.js";
+import { unit1Vi } from "./content/unit1.vi.js";
 
-await render(unit1);
-console.log(`Generated ${unit1.file}`);
+for (const doc of [unit1, unit1Vi]) {
+  await render(doc);
+  console.log(`Generated ${doc.file}`);
+}
