@@ -9,7 +9,7 @@ export const unit1: DocModel = {
     ["Topic", "Overview and glossary, Environment setup, Architecture (Event Loop, V8 Engine, Non-blocking I/O), NPM (package.json, install, scripts), Core modules: path and fs (file handling)"],
     ["Objective", "Understand what Node.js is and how it runs code (V8 + libuv + Event Loop), set up a TypeScript project, manage it with npm, and read/write files safely with the path and fs core modules."],
     ["Prerequisite", "Basic JavaScript/TypeScript syntax (variables, functions, objects, arrays); basic terminal usage (cd, ls/dir, mkdir)."],
-    ["Assumed version", "Node.js 22 LTS or later, TypeScript 5.x, ES Modules (\"type\": \"module\")"],
+    ["Assumed version", "A current Node.js LTS release, a current stable TypeScript release, ES Modules (\"type\": \"module\"). Always check the official release schedule for the version your team uses."],
   ],
   sections: [
     {
@@ -24,9 +24,9 @@ export const unit1: DocModel = {
         p("Check that the installation succeeded:"),
         code(`
 node -v
-# -> v22.x.x (or later)
+# -> prints the installed Node.js version
 npm -v
-# -> 10.x.x (or later)`),
+# -> prints the installed npm version`),
         h3("b. The smallest program"),
         p("Create a file named hello.ts:"),
         code(`
@@ -117,12 +117,12 @@ const f2 = "data/" + name;      // double slash if name starts with "/"`),
       title: "4. Theory - Core concepts of Node.js",
       blocks: [
         h3("4.1 Overview and glossary"),
-        p("Node.js is an open-source, cross-platform JavaScript runtime built on Google's V8 engine. It lets you run JavaScript outside the browser: web servers, command-line tools, scripts, build tools."),
+        p("Node.js is an open-source, cross-platform JavaScript runtime built on the V8 JavaScript engine. It lets you run JavaScript outside the browser: web servers, command-line tools, scripts, build tools."),
         table(
           ["Term", "Meaning", "Example"],
           [
             ["Runtime", "Environment that executes your code and provides APIs", "Node.js, Deno, a browser"],
-            ["V8", "Google's engine that compiles JavaScript into machine code", "Also used in Chrome"],
+            ["V8", "Engine that compiles JavaScript into machine code", "Also used by Chromium-based browsers"],
             ["libuv", "C library behind Node.js that performs async I/O and runs the Event Loop", "File, network, timers"],
             ["Event Loop", "Loop that picks finished tasks and runs their callbacks", "setTimeout callback"],
             ["Non-blocking I/O", "Start an I/O operation and continue working; get notified when it finishes", "fs.promises.readFile"],
@@ -143,7 +143,7 @@ const f2 = "data/" + name;      // double slash if name starts with "/"`),
         h4("Under the hood - what Node.js is made of"),
         ul(
           "Where code runs: V8 executes your JavaScript on a single main thread, using a call stack (function calls) and a heap (objects).",
-          "Who does the waiting: libuv asks the operating system to watch sockets and timers (epoll on Linux, kqueue on macOS, IOCP on Windows). File system and some crypto/DNS work run on a libuv thread pool (4 threads by default).",
+          "Who does the waiting: libuv asks the operating system to watch sockets and timers (epoll on Linux, kqueue on macOS, IOCP on Windows). File system and some crypto/DNS work run on a libuv thread pool (a small, configurable number of threads).",
           "Order guarantee: your own callbacks always run one at a time on the main thread, so two JavaScript functions never run at exactly the same moment in the same thread.",
           "Who sees state changes: all code on the main thread shares the same heap, so a variable changed in one callback is visible to the next one.",
         ),
@@ -221,7 +221,7 @@ console.log("1 sync");
 setTimeout(() => console.log("4 timeout"), 0);
 Promise.resolve().then(() => console.log("3 promise"));
 process.nextTick(() => console.log("2 nextTick"));`),
-        p("Output with ES Modules (this course) - verified with Node.js 26:"),
+        p("Output with ES Modules (the module style used in this course):"),
         code(`
 1 sync
 3 promise
@@ -254,7 +254,7 @@ const b = await readFile("a.txt", "utf8");`),
           [
             ["CPU-heavy loop on main thread", "Server stops responding while it runs", "Event Loop cannot run other callbacks until the loop ends", "Runtime"],
             ["Forgot await on a promise", "Value is a Promise object; code continues too early", "Async function returns immediately", "Runtime (silent)"],
-            ["Unhandled promise rejection", "Process crashes (Node.js 15+)", "Rejected promise has no catch / try-catch", "Runtime"],
+            ["Unhandled promise rejection", "Process crashes (default in modern Node.js)", "Rejected promise has no catch / try-catch", "Runtime"],
             ["Endless process.nextTick recursion", "Timers and I/O never run", "Microtask queue is drained before the loop continues (starvation)", "Runtime"],
             ["Using readFileSync inside a request handler", "Latency grows with load", "Each call blocks all other requests", "Runtime under load"],
           ],
@@ -269,17 +269,19 @@ const b = await readFile("a.txt", "utf8");`),
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx src/index.ts",
+    "watch": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^X.Y.Z",
+    "tsx": "^X.Y.Z",
+    "typescript": "^X.Y.Z"
   }
 }`),
+        note("The exact version numbers (X.Y.Z) are written by npm at install time, so they depend on when you run the command. dev runs the program once (good for CLI tools); watch restarts it on every save (good for servers)."),
         table(
           ["Field", "Purpose"],
           [
@@ -357,7 +359,7 @@ path.resolve("data", "a.txt"); // absolute path based on the current working dir
             ["path.basename(p, ext?)", "Last part (file name)", "Optional extension is removed"],
             ["path.extname(p)", "File extension", "Includes the dot: \".txt\""],
             ["path.dirname(p)", "Folder part", "-"],
-            ["import.meta.dirname", "Folder of the current file", "ES Modules, Node.js 20.11+; replaces __dirname"],
+            ["import.meta.dirname", "Folder of the current file", "ES Modules, recent Node.js releases; replaces __dirname"],
           ],
           [3, 3, 4],
         ),
@@ -455,7 +457,9 @@ npm init -y
 npm i -D typescript tsx @types/node
 npm pkg set type=module
 npm pkg set scripts.dev="tsx src/index.ts"
+npm pkg set scripts.watch="tsx watch src/index.ts"
 mkdir src`),
+        note("NoteKeeper is a command-line tool: it runs a command and exits, so we use dev (run once). If you later turn it into a server, use npm run watch so the program restarts automatically when you save a file."),
         h3("Step 2 - notes.ts: path + fs/promises"),
         code(`
 // src/notes.ts
@@ -467,6 +471,8 @@ const DATA_DIR = path.join(import.meta.dirname, "..", "data");
 function notePath(title: string): string {
   // basename strips any folder part, the regex removes odd characters
   const safe = path.basename(title).replace(/[^a-z0-9_-]/gi, "-");
+  // reject empty or meaningless titles such as "" or "???"
+  if (!safe || /^-+$/.test(safe)) throw new Error("Invalid note title");
   return path.join(DATA_DIR, \`\${safe}.txt\`);
 }
 
@@ -486,7 +492,7 @@ export async function listNotes(): Promise<string[]> {
 export async function readNote(title: string): Promise<string> {
   return readFile(notePath(title), "utf8");
 }`),
-        p("Why is this better? The path is built with path.join (portable), it does not depend on the current folder (import.meta.dirname), user input is sanitised, and every call is non-blocking."),
+        p("Why is this better? The path is built with path.join (portable), it does not depend on the current folder (import.meta.dirname), user input is sanitised and rejected when meaningless (empty or symbols only), and every call is non-blocking."),
         h3("Step 3 - index.ts: read command-line arguments"),
         code(`
 // src/index.ts
@@ -520,7 +526,9 @@ npm run dev -- list
 npm run dev -- read shopping
 # -> milk eggs
 npm run dev -- read unknown
-# -> Note not found`),
+# -> Note not found
+npm run dev -- add "???" test
+# -> Invalid note title`),
         h3("Step 5 - Prove it is non-blocking"),
         p("Reading several notes at the same time with Promise.all lets all reads overlap instead of running one after another:"),
         code(`
@@ -692,7 +700,7 @@ import { addNote } from "./notes.js";`),
         h3("Group: Environment and npm"),
         p("Exercise 1 (Easy): Install Node.js LTS, run node -v and npm -v, and write down the versions. Create hello.ts and run it with npx tsx."),
         p("Exercise 2 (Easy): Create a new project with npm init -y. Add the scripts dev, build and start. Run npm run dev."),
-        p("Exercise 3 (Medium): Install a small package such as dayjs with npm i, and a type-related package with npm i -D. Look at package.json and package-lock.json. Which section did each package go to? Delete node_modules and restore it with npm ci."),
+        p("Exercise 3 (Medium): Install a small utility package with npm i, and a type-related package with npm i -D. Look at package.json and package-lock.json. Which section did each package go to? Delete node_modules and restore it with npm ci."),
         h3("Group: Event Loop"),
         p("Exercise 4 (Easy): Run the order.ts script from section 7. Explain every line of the output."),
         p("Exercise 5 (Medium): Predict the output, then run it:"),
@@ -708,13 +716,14 @@ console.log("E");`),
         p("Exercise 6 (Hard): Write a loop that runs for 3 seconds (while (Date.now() < end) {}). Start a setTimeout of 100 ms before it. When does the timer callback run? Why does it not run after 100 ms?"),
         h3("Group: path"),
         p("Exercise 7 (Easy): For the path /users/intern/docs/report.final.pdf print basename, extname, dirname and the basename without extension."),
-        p("Exercise 8 (Medium): Write a function safeJoin(baseDir, userInput) that returns the joined path, but throws an error if the result is outside baseDir (hint: path.resolve and startsWith). Test it with ../secret.txt."),
+        p("Exercise 8 (Medium): Write a function safeJoin(baseDir, userInput) that returns the joined path, but throws an error if the result is outside baseDir. Test it with ../secret.txt and with a sibling folder whose name starts with the same text as baseDir (for example baseDir = /app/data and target = /app/data-secret/file.txt). Hint: use path.resolve, then check the result with path.relative (it must not start with .. and must not be absolute), or compare with baseDir + path.sep. Think about why a plain startsWith(baseDir) is not enough."),
         h3("Group: fs"),
         p("Exercise 9 (Easy): Write a script that creates a folder out, writes 3 .txt files into it, and prints the file names using fs/promises."),
         p("Exercise 10 (Medium): Read a file that does not exist. Catch the error and print a friendly message only when err.code is ENOENT; rethrow other errors."),
         p("Exercise 11 (Medium): Compare readFileSync and readFile with Promise.all on 5 files of 50 MB each. Measure the time with console.time. Which is faster, and why might the result differ for a single file?"),
         h3("Integration"),
         p("Exercise 12 (Hard): Extend NoteKeeper with the commands delete <title> and append <title> <text>. Requirements: use fs/promises only, handle ENOENT with a clear message, keep all paths inside the data folder, and add a build script that compiles with tsc and a start script that runs dist/index.js."),
+        p("Exercise 13 (Medium): Write automated tests for the title handling of NoteKeeper using the built-in node:test and node:assert modules (no extra packages). Export notePath from notes.ts, then add test cases for: a normal title (\"shopping\"), an empty title, a title made only of symbols (\"???\"), and a title that tries to leave the folder (\"../../x\"). For each case decide what the correct behaviour is (a safe path or an error), write the expectation first, then run the tests with node --test (use tsx if you keep TypeScript files). Which case surprised you, and what did you change in the code?"),
       ],
     },
     {
